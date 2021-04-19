@@ -12,7 +12,8 @@ struct queue_t *queue_node_init() {
 }
 
 // free a node and set it to null
-void queue_node_destroy(struct queue_t **node) {
+void queue_node_destroy(struct queue_t **node, void (*clean_data)(void*)) {
+    if(clean_data) clean_data((*node)->data);
     free(*node);
     *node = NULL;
 }
@@ -27,14 +28,15 @@ struct queue_t *queue_init() {
 }
 
 // destroy a queue, freeing all elms
-void queue_destroy(struct queue_t **head) {
+void queue_destroy(struct queue_t **head, void (*clean_data)(void*)) {
     struct queue_t *node = NULL;
     // while not empty, get more
     while((node = queue_dequeue(head)) != NULL) {
-        queue_node_destroy(&node);
+        queue_node_destroy(&node, clean_data);
     }
     // all thats left is the head
-    queue_node_destroy(head);
+    //no destructor needed, its empty
+    queue_node_destroy(head, NULL);
 }
 
 // check if the queue is empty

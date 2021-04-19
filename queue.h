@@ -18,11 +18,11 @@ struct queue_t {
 // init a new node and return
 struct queue_t *queue_node_init();
 // free a node and set it to null
-void queue_node_destroy(struct queue_t **node);
+void queue_node_destroy(struct queue_t **node, void (*clean_data)(void*));
 // init a queue head
 struct queue_t *queue_init();
 // destroy a queue, freeing all elms
-void queue_destroy(struct queue_t **head);
+void queue_destroy(struct queue_t **head, void (*clean_data)(void*));
 // check if the queue is empty
 int queue_is_empty(struct queue_t **head);
 // to add an item, set the heads prev to be the item

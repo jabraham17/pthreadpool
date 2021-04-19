@@ -15,30 +15,40 @@
 void* dummy_print(void* arg) {
     int id = (unsigned long long )arg / CONST;
     unsigned long pid = ((unsigned long)pthread_self() & 0xFFFFFFFF) >> 12;
-    printf("%10llu: Start  task %3d in 0x%lx\n", th_gettime(), id, pid);
+
+    struct timespec t;
+    clock_gettime(CLOCK_MONOTONIC, &t);
+    printf("%14.2f: Start  task %3d in 0x%lx\n", th_conv_timespec_ms(&t), id, pid);
     for(unsigned long long i = 0; i < (unsigned long long )arg; i++)  {
         asm ("nop");
     }
-    printf("%10llu: Finish task %3d in 0x%lx\n", th_gettime(), id, pid);
+    struct timespec t2;
+    clock_gettime(CLOCK_MONOTONIC, &t2);
+    th_sub_timespec(&t, &t2, &t);
+    printf("%14.2f: Finish task %3d in 0x%lx with time %8.2f\n", th_conv_timespec_ms(&t2), id, pid, th_conv_timespec_ms(&t));
     return NULL;
 }
 
 int main() {
 
-    //dummy_print((void*)100000);
-
-    //dummy_print((void*)100000);
 
     struct pool_t* pool = pool_init(5);
+    struct task_t* tasks[20];
 
     for(unsigned int i = 0; i < 20; i++) {
-        struct task_t* t = pool_submit(pool, dummy_print, (void*)((i+1)*CONST), NULL);
+        tasks[i] = pool_submit(pool, dummy_print, (void*)((i+1)*CONST), NULL);
+        //pool_wait(t);
         //DPRINTF("task %p\n", t);
     }
-
-        for(unsigned long long i = 0; i < 1000000ull; i++)  {
-        asm ("nop");
+    for(int i = 19; i >= 0; i--){
+        pool_wait(tasks[i]);
     }
+
+    /*for(unsigned long long i = 0; i < CONST*200ull; i++)  {
+        asm ("nop");
+    }*/
+    struct task_t* t = pool_submit(pool, dummy_print, (void*)(21*CONST), NULL);
+    pool_wait(t);
 
     
     pool_destroy(&pool);
