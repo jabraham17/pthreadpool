@@ -51,7 +51,7 @@ int main() {
     }*/
     struct task_t *t =
         pool_submit(pool, dummy_print, (void *)(21 * CONST), NULL);
-    pool_wait(t);
+    pool_wait(&t);
 
     pool_destroy(&pool);
 
