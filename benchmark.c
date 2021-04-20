@@ -1,6 +1,7 @@
 
 // benchmark using this to optimize a loop
 
+#include <immintrin.h>
 #include <omp.h>
 #include <pthread.h>
 #include <stdio.h>
@@ -12,28 +13,98 @@
 
 // baseline kernel
 double dot(double* x, double* y, size_t n) {
+    size_t i = 0;
     double sum = 0;
-    for(size_t i = 0; i < n; i++) {
+#ifdef VECTORIZE
+    __m256d temp1, temp2, temp3, temp4;
+    temp1 = temp2 = temp3 = temp4 = _mm256_set1_pd(0);
+    __m256d sum12, sum34, vsum, shuf;
+    for(i = 0; i < n - 16; i += 16) {
+        temp1 = _mm256_fmadd_pd(_mm256_load_pd(x + i), _mm256_load_pd(y + i),
+                                temp1);
+        temp2 = _mm256_fmadd_pd(_mm256_load_pd(x + i + 4),
+                                _mm256_load_pd(y + i + 4), temp2);
+        temp3 = _mm256_fmadd_pd(_mm256_load_pd(x + i + 8),
+                                _mm256_load_pd(y + i + 8), temp3);
+        temp4 = _mm256_fmadd_pd(_mm256_load_pd(x + i + 12),
+                                _mm256_load_pd(y + i + 12), temp4);
+    }
+    sum12 = _mm256_add_pd(temp1, temp2);
+    sum34 = _mm256_add_pd(temp3, temp4);
+    vsum = _mm256_add_pd(sum12, sum34);
+
+    // A  B  C  D
+    // B  A  D  C
+    // AB BA CD DC
+    // CD DC AB BA
+    shuf = _mm256_permute_pd(vsum, 0b00000101);
+    vsum = _mm256_add_pd(vsum, shuf);
+    shuf = _mm256_permute2f128_pd(vsum, vsum, 0b00100001);
+    vsum = _mm256_add_pd(vsum, shuf); // even though single, do it anyways
+
+    sum = _mm_cvtsd_f64(_mm256_extractf128_pd(vsum, 0));
+#endif
+    for(/*nothing*/; i < n; i++) {
         sum += x[i] * y[i];
     }
     return sum;
 }
 
 #ifndef NUM_THREADS
-#define NUM_THREADS 6
+#define NUM_THREADS 1
 #endif
 
 // openmp implementation
 double dot_openmp(double* x, double* y, size_t n) {
     double sum = 0;
     size_t i = 0;
+
+#ifdef VECTORIZE
+    __m256d temp1, temp2, temp3, temp4;
+    temp1 = temp2 = temp3 = temp4 = _mm256_set1_pd(0);
+    __m256d sum12, sum34, vsum, shuf;
+
+#endif
+
+#ifdef VECTORIZE
+#pragma omp parallel private(i, temp1, temp2, temp3, temp4, sum12, sum34,      \
+                             vsum, shuf) num_threads(NUM_THREADS)
+#else
 #pragma omp parallel private(i) num_threads(NUM_THREADS)
+#endif
     {
-#pragma omp for reduction(+ : sum)
-        for(i = 0; i < n; i++) {
+#ifdef VECTORIZE
+#pragma omp for reduction(+ : temp1, temp2, temp3, temp4)
+        for(i = 0; i < n - 16; i += 16) {
+            temp1 = _mm256_fmadd_pd(_mm256_load_pd(x + i),
+                                    _mm256_load_pd(y + i), temp1);
+            temp2 = _mm256_fmadd_pd(_mm256_load_pd(x + i + 4),
+                                    _mm256_load_pd(y + i + 4), temp2);
+            temp3 = _mm256_fmadd_pd(_mm256_load_pd(x + i + 8),
+                                    _mm256_load_pd(y + i + 8), temp3);
+            temp4 = _mm256_fmadd_pd(_mm256_load_pd(x + i + 12),
+                                    _mm256_load_pd(y + i + 12), temp4);
+        }
+        sum12 = _mm256_add_pd(temp1, temp2);
+        sum34 = _mm256_add_pd(temp3, temp4);
+        vsum = _mm256_add_pd(sum12, sum34);
+
+        // A  B  C  D
+        // B  A  D  C
+        // AB BA CD DC
+        // CD DC AB BA
+        shuf = _mm256_permute_pd(vsum, 0b00000101);
+        vsum = _mm256_add_pd(vsum, shuf);
+        shuf = _mm256_permute2f128_pd(vsum, vsum, 0b00100001);
+        vsum = _mm256_add_pd(vsum, shuf); // even though single, do it anyways
+
+        sum = _mm_cvtsd_f64(_mm256_extractf128_pd(vsum, 0));
+#endif
+        for(/*nothing*/; i < n; i++) {
             sum += x[i] * y[i];
         }
     }
+
     return sum;
 }
 
@@ -114,7 +185,7 @@ int main(__attribute((unused)) int argc, __attribute((unused)) char** argv) {
 
     srand(time(NULL));
 
-    size_t n = 1024 * 1024;
+    size_t n = 1024 * 1024 * 8;
 
     double result;
     double* x = (double*)aligned_alloc(64, n * sizeof(double));
