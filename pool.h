@@ -35,8 +35,8 @@ void pool_destroy(struct pool_t **pool);
 struct task_t *pool_submit(struct pool_t *pool, void *(*function)(void *),
                            void *argument, void **result);
 // wait for a specific work to complete
-void pool_wait(struct task_t *task);
-//destroy the task
-void pool_task_destroy(struct task_t** task);
+void pool_wait(struct task_t **task);
+// destroy the task
+void pool_task_destroy(struct task_t **task);
 
 #endif
