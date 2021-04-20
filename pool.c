@@ -189,6 +189,7 @@ void pool_wait(task_t** task) {
     while(!(*task)->done) {
         ret = pthread_cond_timedwait(&((*task)->done_signal),
                                      &((*task)->done_lock), &timeout);
+        DPRINTF("WAIT %d\n", ret);
     }
     ret = pthread_mutex_unlock(&((*task)->done_lock));
 
