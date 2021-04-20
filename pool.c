@@ -188,7 +188,6 @@ void pool_wait(task_t** task) {
 
     // wait is done, we can destroy the task
     pool_task_destroy(task);
-    *task = NULL;
 }
 
 // destroy the task
