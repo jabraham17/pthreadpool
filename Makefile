@@ -1,6 +1,7 @@
 CC= gcc
 
-override CFLAGS+= -Wall -Wextra -pthread
+# -Weverything is an option, but its a little too much
+override CFLAGS+= -Wall -Wextra -Wpedantic -pthread
 
 ifeq ($(DEBUG),1)
 override CFLAGS+= -DDEBUG -g

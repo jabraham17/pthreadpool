@@ -13,19 +13,19 @@
 #define CONST 10000000ull
 
 void* dummy_print(void* arg) {
-    int id = (unsigned long long )arg / CONST;
+    unsigned long long id = (unsigned long long )arg / CONST;
     unsigned long pid = ((unsigned long)pthread_self() & 0xFFFFFFFF) >> 12;
 
     struct timespec t;
     clock_gettime(CLOCK_MONOTONIC, &t);
-    printf("%14.2f: Start  task %3d in 0x%lx\n", th_conv_timespec_ms(&t), id, pid);
+    printf("%14.2f: Start  task %3llu in 0x%lx\n", th_conv_timespec_ms(&t), id, pid);
     for(unsigned long long i = 0; i < (unsigned long long )arg; i++)  {
-        asm ("nop");
+        __asm__ ("nop");
     }
     struct timespec t2;
     clock_gettime(CLOCK_MONOTONIC, &t2);
     th_sub_timespec(&t, &t2, &t);
-    printf("%14.2f: Finish task %3d in 0x%lx with time %8.2f\n", th_conv_timespec_ms(&t2), id, pid, th_conv_timespec_ms(&t));
+    printf("%14.2f: Finish task %3llu in 0x%lx with time %8.2f\n", th_conv_timespec_ms(&t2), id, pid, th_conv_timespec_ms(&t));
     return NULL;
 }
 

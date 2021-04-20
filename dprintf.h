@@ -6,10 +6,10 @@
 #include <stdlib.h>
 
 #ifdef DEBUG
-#define DPRINTF(fmt, args...)                                                  \
-    printf("DEBUG: %s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, ##args)
+#define DPRINTF(fmt, ...)                                                  \
+    printf("DEBUG: %s:%d:%s(): " fmt, __FILE__, __LINE__, __func__, ##__VA_ARGS__)
 #else
-#define DPRINTF(fmt, args...)
+#define DPRINTF(fmt, ...)
 #endif
 
 #define EPRINTF(__FMT, ...)                                                    \
