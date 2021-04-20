@@ -6,10 +6,9 @@
 #include "pool.h"
 #include "timespec_helper.h"
 
-
 #define CONST 10000000ull
 
-void *dummy_print(void *arg) {
+void* dummy_print(void* arg) {
     unsigned long long id = (unsigned long long)arg / CONST;
     unsigned long pid = ((unsigned long)pthread_self() & 0xFFFFFFFF) >> 12;
 
@@ -30,12 +29,12 @@ void *dummy_print(void *arg) {
 
 int main() {
 
-    struct pool_t *pool = pool_init(5);
-    struct task_t *tasks[20];
+    pool_t* pool = pool_init(5);
+    task_t* tasks[20];
 
     for(unsigned int i = 0; i < 20; i++) {
         tasks[i] =
-            pool_submit(pool, dummy_print, (void *)((i + 1) * CONST), NULL);
+            pool_submit(pool, dummy_print, (void*)((i + 1) * CONST), NULL);
         // pool_wait(t);
         // DPRINTF("task %p\n", t);
     }
@@ -46,8 +45,8 @@ int main() {
     /*for(unsigned long long i = 0; i < CONST*200ull; i++)  {
         asm ("nop");
     }*/
-    struct task_t *t =
-        pool_submit(pool, dummy_print, (void *)(21 * CONST), NULL);
+    task_t* t =
+        pool_submit(pool, dummy_print, (void*)(21 * CONST), NULL);
     pool_wait(&t);
 
     pool_destroy(&pool);
