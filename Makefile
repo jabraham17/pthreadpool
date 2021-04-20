@@ -1,7 +1,8 @@
-CC= gcc
+CC= clang
 
+# -Wpedantic is just annoying
 # -Weverything is an option, but its a little too much
-override CFLAGS+= -Wall -Wextra -Wpedantic -pthread -Wno-gnu-binary-literal -fopenmp
+override CFLAGS+= -Wall -Wextra -O3 -pthread -fopenmp
 
 ifeq ($(DEBUG),1)
 override CFLAGS+= -DDEBUG -g
