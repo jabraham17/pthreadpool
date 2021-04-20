@@ -1,10 +1,10 @@
 
 // benchmark using this to optimize a loop
 
+#include <omp.h>
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <omp.h>
 
 #include "pool.h"
 #include "timespec_helper.h"
@@ -27,9 +27,9 @@ double dot(double* x, double* y, size_t n) {
 double dot_openmp(double* x, double* y, size_t n) {
     double sum = 0;
     size_t i = 0;
-    #pragma omp parallel private(i) num_threads(NUM_THREADS) 
+#pragma omp parallel private(i) num_threads(NUM_THREADS)
     {
-        #pragma omp for reduction(+ : sum)
+#pragma omp for reduction(+ : sum)
         for(i = 0; i < n; i++) {
             sum += x[i] * y[i];
         }
@@ -71,7 +71,8 @@ double dot_pthreadpool(pool_t* pool, double* x, double* y, size_t n) {
     args[NUM_THREADS - 1].high = n; // make the last one take any remainders
 
     for(int i = 0; i < NUM_THREADS; i++) {
-        threads[i] = pool_submit(pool, dot_pthreadpool_worker, (void*)(args+i), NULL);
+        threads[i] =
+            pool_submit(pool, dot_pthreadpool_worker, (void*)(args + i), NULL);
     }
 
     double sum = 0;
@@ -82,13 +83,10 @@ double dot_pthreadpool(pool_t* pool, double* x, double* y, size_t n) {
     return sum;
 }
 
-
-
-
 typedef struct {
-    double *x;
-    double *y;
-    double *result;
+    double* x;
+    double* y;
+    double* result;
     size_t n;
     pool_t* pool;
 } test_args_t;
@@ -109,19 +107,18 @@ void* bench_pthreadpool(void* arg) {
     return NULL;
 }
 
-
 #define rand_range_int(low, high) low + rand() % (high + 1 - low)
 #define rand_range_double(low, high) (double)(rand_range_int(low, high))
 
-int main(__attribute((unused)) int argc, __attribute((unused)) char **argv) {
+int main(__attribute((unused)) int argc, __attribute((unused)) char** argv) {
 
     srand(time(NULL));
 
-    size_t n = 1024*1024;
+    size_t n = 1024 * 1024;
 
     double result;
-    double *x = (double *)aligned_alloc(64, n * sizeof(double));
-    double *y = (double *)aligned_alloc(64, n * sizeof(double));
+    double* x = (double*)aligned_alloc(64, n * sizeof(double));
+    double* y = (double*)aligned_alloc(64, n * sizeof(double));
 
     pool_t* pool = pool_init(NUM_THREADS);
 
@@ -132,23 +129,23 @@ int main(__attribute((unused)) int argc, __attribute((unused)) char **argv) {
         y[i] = rand_range_double(1, 200);
     }
 
-    #define _N 50
-    #define _L 10
+#define _N 50
+#define _L 10
     printf("Baseline   : ");
-    benchmark(bench_dot, (void *)(&arg), _N, _L, 0b01, NULL);
+    benchmark(bench_dot, (void*)(&arg), _N, _L, 0b01, NULL);
     printf("OPENMP     : ");
-    benchmark(bench_openmp, (void *)(&arg), _N, _L, 0b01, NULL);
+    benchmark(bench_openmp, (void*)(&arg), _N, _L, 0b01, NULL);
     printf("PThreadPool: ");
-    benchmark(bench_pthreadpool, (void *)(&arg), _N, _L, 0b01, NULL);
+    benchmark(bench_pthreadpool, (void*)(&arg), _N, _L, 0b01, NULL);
 
-    #ifdef ACCURACY 
+#ifdef ACCURACY
     printf("\nAccuracy\n");
-    bench_dot((void *)(&arg));
+    bench_dot((void*)(&arg));
     printf("B  : %16.6f\n", *(arg.result));
-    bench_openmp((void *)(&arg));
+    bench_openmp((void*)(&arg));
     printf("OMP: %16.6f\n", *(arg.result));
-    bench_pthreadpool((void *)(&arg));
+    bench_pthreadpool((void*)(&arg));
     printf("PTP: %16.6f\n", *(arg.result));
-    #endif
+#endif
     pool_destroy(&pool);
 }

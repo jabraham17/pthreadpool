@@ -58,8 +58,7 @@ void* worker(void* arg) {
             *(task->result) = task->function(task->argument);
         else
             task->function(task->argument);
-    
-        
+
         ret = pthread_mutex_lock(&(task->done_lock));
         task->done = 1;
         // task is complete, signal
@@ -177,7 +176,6 @@ task_t* pool_submit(pool_t* pool, void* (*function)(void*), void* argument,
 
     // unlock
     ret = pthread_mutex_unlock(&(pool->queue_lock));
-    
 
     return task;
 }
