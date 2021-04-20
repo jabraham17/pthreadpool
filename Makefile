@@ -1,7 +1,7 @@
 CC= gcc
 
 # -Weverything is an option, but its a little too much
-override CFLAGS+= -Wall -Wextra -Wpedantic -pthread
+override CFLAGS+= -Wall -Wextra -Wpedantic -pthread -Wno-gnu-binary-literal -fopenmp
 
 ifeq ($(DEBUG),1)
 override CFLAGS+= -DDEBUG -g

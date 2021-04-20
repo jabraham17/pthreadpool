@@ -1,4 +1,6 @@
 
+//basic functional test
+
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -35,18 +37,12 @@ int main() {
     for(unsigned int i = 0; i < 20; i++) {
         tasks[i] =
             pool_submit(pool, dummy_print, (void*)((i + 1) * CONST), NULL);
-        // pool_wait(t);
-        // DPRINTF("task %p\n", t);
     }
     for(int i = 19; i >= 0; i--) {
         pool_wait(&(tasks[i]));
     }
 
-    /*for(unsigned long long i = 0; i < CONST*200ull; i++)  {
-        asm ("nop");
-    }*/
-    task_t* t =
-        pool_submit(pool, dummy_print, (void*)(21 * CONST), NULL);
+    task_t* t = pool_submit(pool, dummy_print, (void*)(21 * CONST), NULL);
     pool_wait(&t);
 
     pool_destroy(&pool);
