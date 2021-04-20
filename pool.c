@@ -1,15 +1,15 @@
 #include "pool.h"
 
-struct worker_cleanup_arg_t {
-    struct queue_t **node;
+typedef struct worker_cleanup_arg_t {
+    queue_t **node;
     pthread_mutex_t *lock;
-};
+} worker_cleanup_arg_t;
 // cleanup worker when it is canceld
 // do this by destroying the node and unlocking the mutex
 void worker_cleanup(void *arg) {
     int ret;
-    struct worker_cleanup_arg_t *cleanup_arg =
-        (struct worker_cleanup_arg_t *)arg;
+    worker_cleanup_arg_t *cleanup_arg =
+        (worker_cleanup_arg_t *)arg;
     // get the data and destroy the node
     if(*(cleanup_arg->node) != NULL)
         queue_node_destroy(cleanup_arg->node, NULL);
@@ -20,7 +20,7 @@ void worker_cleanup(void *arg) {
 
 void *worker(void *arg) {
     int ret, oldstate;
-    struct pool_t *pool = (struct pool_t *)arg;
+    pool_t *pool = (pool_t *)arg;
 
     while(1) {
         // we can cancel anytime in the aquisition of a new task
@@ -32,11 +32,11 @@ void *worker(void *arg) {
         ret = pthread_mutex_lock(&(pool->queue_lock));
 
         // try and get the next task, if empty wait for a signal
-        struct queue_t *next = NULL;
-        struct task_t *task = NULL;
+        queue_t *next = NULL;
+        task_t *task = NULL;
 
         // setup cancel handler
-        struct worker_cleanup_arg_t cleanup_arg = {.node = &next,
+        worker_cleanup_arg_t cleanup_arg = {.node = &next,
                                                    .lock = &(pool->queue_lock)};
         pthread_cleanup_push(&worker_cleanup, (void *)(&cleanup_arg));
 
@@ -44,7 +44,7 @@ void *worker(void *arg) {
             ret = pthread_cond_wait(&(pool->queue_signal), &(pool->queue_lock));
         }
         task =
-            (struct task_t
+            (task_t
                  *)(next->data); // get the data out of the node before cleanup
         pthread_cleanup_pop(1);  // non-zero value to execute cleanup
 
@@ -70,9 +70,9 @@ void *worker(void *arg) {
 }
 
 // init a pool and start up the threads
-struct pool_t *pool_init(int num_threads) {
+pool_t *pool_init(int num_threads) {
     int ret;
-    struct pool_t *pool = (struct pool_t *)malloc(sizeof(struct pool_t));
+    pool_t *pool = (pool_t *)malloc(sizeof(pool_t));
     pool->num_threads = num_threads;
 
     // allocate the queue
@@ -107,12 +107,12 @@ struct pool_t *pool_init(int num_threads) {
 void task_destructor(void *arg) {
     if(arg == NULL)
         return;
-    struct task_t *data = (struct task_t *)arg;
+    task_t *data = (task_t *)arg;
     pool_task_destroy(&data);
 }
 
 // destroy and close threads
-void pool_destroy(struct pool_t **pool) {
+void pool_destroy(pool_t **pool) {
     int ret;
     // cancel all threads
     for(unsigned int i = 0; i < (*pool)->num_threads; i++) {
@@ -139,11 +139,11 @@ void pool_destroy(struct pool_t **pool) {
 }
 
 // submit work to pool
-struct task_t *pool_submit(struct pool_t *pool, void *(*function)(void *),
+task_t *pool_submit(pool_t *pool, void *(*function)(void *),
                            void *argument, void **result) {
     int ret;
     // init basic task items
-    struct task_t *task = (struct task_t *)malloc(sizeof(struct task_t));
+    task_t *task = (task_t *)malloc(sizeof(task_t));
     task->argument = argument;
     task->result = result;
     task->function = function;
@@ -167,7 +167,7 @@ struct task_t *pool_submit(struct pool_t *pool, void *(*function)(void *),
     // lock the queue
     ret = pthread_mutex_lock(&(pool->queue_lock));
     // init and add
-    struct queue_t *node = queue_node_init();
+    queue_t *node = queue_node_init();
     node->data = (void *)task;
     queue_enqueue(&(pool->queue), node);
     // unlock
@@ -179,7 +179,7 @@ struct task_t *pool_submit(struct pool_t *pool, void *(*function)(void *),
 }
 
 // wait for a specific work to complete
-void pool_wait(struct task_t **task) {
+void pool_wait(task_t **task) {
     int ret;
     // while not done, wait for signal
     ret = pthread_mutex_lock(&((*task)->done_lock));
@@ -194,7 +194,7 @@ void pool_wait(struct task_t **task) {
 }
 
 // destroy the task
-void pool_task_destroy(struct task_t **task) {
+void pool_task_destroy(task_t **task) {
     int ret;
     ret = pthread_cond_destroy(&((*task)->done_signal));
     ret = pthread_mutex_destroy(&((*task)->done_lock));

@@ -2,13 +2,10 @@
 #include <pthread.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <sys/syscall.h>
-#include <unistd.h>
 
 #include "pool.h"
 #include "timespec_helper.h"
 
-//#define gettid() syscall(SYS_gettid)
 
 #define CONST 10000000ull
 
@@ -51,7 +48,7 @@ int main() {
     }*/
     struct task_t *t =
         pool_submit(pool, dummy_print, (void *)(21 * CONST), NULL);
-    pool_wait(t);
+    pool_wait(&t);
 
     pool_destroy(&pool);
 
