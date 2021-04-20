@@ -20,8 +20,6 @@ void worker_cleanup(void* arg) {
 void* worker(void* arg) {
     int ret, oldstate;
     pool_t* pool = (pool_t*)arg;
-    struct timespec timeout;
-    th_calc_timespec(&timeout, 0, 10ull * 1000ull * 1000ull); // 10ms
 
     while(1) {
         // we can cancel anytime in the aquisition of a new task
@@ -42,8 +40,7 @@ void* worker(void* arg) {
         pthread_cleanup_push(&worker_cleanup, (void*)(&cleanup_arg));
 
         while((next = queue_dequeue(&(pool->queue))) == NULL) {
-            ret = pthread_cond_timedwait(&(pool->queue_signal),
-                                         &(pool->queue_lock), &timeout);
+            ret = pthread_cond_wait(&(pool->queue_signal), &(pool->queue_lock));
         }
         task = (task_t*)(next->data); // get the data out of the node before
                                       // cleanup
@@ -61,10 +58,13 @@ void* worker(void* arg) {
             *(task->result) = task->function(task->argument);
         else
             task->function(task->argument);
-
+    
+        
+        ret = pthread_mutex_lock(&(task->done_lock));
         task->done = 1;
         // task is complete, signal
         ret = pthread_cond_signal(&(task->done_signal));
+        ret = pthread_mutex_unlock(&(task->done_lock));
     }
 
     return NULL;
@@ -171,10 +171,13 @@ task_t* pool_submit(pool_t* pool, void* (*function)(void*), void* argument,
     queue_t* node = queue_node_init();
     node->data = (void*)task;
     queue_enqueue(&(pool->queue), node);
-    // unlock
-    ret = pthread_mutex_unlock(&(pool->queue_lock));
+
     // signal we have a new task
     ret = pthread_cond_signal(&(pool->queue_signal));
+
+    // unlock
+    ret = pthread_mutex_unlock(&(pool->queue_lock));
+    
 
     return task;
 }
@@ -182,14 +185,10 @@ task_t* pool_submit(pool_t* pool, void* (*function)(void*), void* argument,
 // wait for a specific work to complete
 void pool_wait(task_t** task) {
     int ret;
-    struct timespec timeout;
-    th_calc_timespec(&timeout, 0, 10ull * 1000ull * 1000ull); // 10ms
     // while not done, wait for signal
     ret = pthread_mutex_lock(&((*task)->done_lock));
     while(!(*task)->done) {
-        ret = pthread_cond_timedwait(&((*task)->done_signal),
-                                     &((*task)->done_lock), &timeout);
-        DPRINTF("WAIT %d\n", ret);
+        ret = pthread_cond_wait(&((*task)->done_signal), &((*task)->done_lock));
     }
     ret = pthread_mutex_unlock(&((*task)->done_lock));
 

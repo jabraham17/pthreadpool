@@ -76,7 +76,6 @@ double dot_pthreadpool(pool_t* pool, double* x, double* y, size_t n) {
 
     double sum = 0;
     for(int i = 0; i < NUM_THREADS; i++) {
-        DPRINTF("waiting on %d\n", i);
         pool_wait(&threads[i]);
         sum += sums[i];
     }
