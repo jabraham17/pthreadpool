@@ -2,7 +2,7 @@ CC= clang
 
 # -Wpedantic is just annoying
 # -Weverything is an option, but its a little too much
-override CFLAGS+= -Wall -Wextra -O3 -pthread #-fopenmp
+override CFLAGS+= -Wall -Wextra -O3 -pthread -fopenmp
 
 ifeq ($(DEBUG),1)
 override CFLAGS+= -DDEBUG -g
@@ -12,7 +12,7 @@ ifeq ($(ACCURACY),1)
 override CFLAGS+= -DACCURACY
 endif
 
-ifdef ($(THREADS))
+ifdef THREADS
 override CFLAGS+= -DNUM_THREADS=$(THREADS)
 endif
 

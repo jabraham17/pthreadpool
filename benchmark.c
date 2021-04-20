@@ -74,7 +74,7 @@ double dot_openmp(double* x, double* y, size_t n) {
 #endif
     {
 #ifdef VECTORIZE
-#pragma omp for reduction(+ : temp1, temp2, temp3, temp4)
+#pragma omp for
         for(i = 0; i < n - 16; i += 16) {
             temp1 = _mm256_fmadd_pd(_mm256_load_pd(x + i),
                                     _mm256_load_pd(y + i), temp1);
@@ -119,10 +119,43 @@ typedef struct {
 void* dot_pthreadpool_worker(void* arg) {
     dot_pthreadpool_arg_t* parg = (dot_pthreadpool_arg_t*)arg;
     double sum = 0;
-    for(size_t i = parg->low; i < parg->high; i++) {
+    size_t i = parg->low;
+
+    #ifdef VECTORIZE
+    __m256d temp1, temp2, temp3, temp4;
+    temp1 = temp2 = temp3 = temp4 = _mm256_set1_pd(0);
+    __m256d sum12, sum34, vsum, shuf;
+    for(/*nothing*/; i < parg->high - 16; i += 16) {
+        temp1 = _mm256_fmadd_pd(_mm256_load_pd(parg->x + i), _mm256_load_pd(parg->y + i),
+                                temp1);
+        temp2 = _mm256_fmadd_pd(_mm256_load_pd(parg->x + i + 4),
+                                _mm256_load_pd(parg->y + i + 4), temp2);
+        temp3 = _mm256_fmadd_pd(_mm256_load_pd(parg->x + i + 8),
+                                _mm256_load_pd(parg->y + i + 8), temp3);
+        temp4 = _mm256_fmadd_pd(_mm256_load_pd(parg->x + i + 12),
+                                _mm256_load_pd(parg->y + i + 12), temp4);
+    }
+    sum12 = _mm256_add_pd(temp1, temp2);
+    sum34 = _mm256_add_pd(temp3, temp4);
+    vsum = _mm256_add_pd(sum12, sum34);
+
+    // A  B  C  D
+    // B  A  D  C
+    // AB BA CD DC
+    // CD DC AB BA
+    shuf = _mm256_permute_pd(vsum, 0b00000101);
+    vsum = _mm256_add_pd(vsum, shuf);
+    shuf = _mm256_permute2f128_pd(vsum, vsum, 0b00100001);
+    vsum = _mm256_add_pd(vsum, shuf); // even though single, do it anyways
+
+    sum = _mm_cvtsd_f64(_mm256_extractf128_pd(vsum, 0));
+#endif
+    for(/*nothing*/; i < parg->high; i++) {
         sum += parg->x[i] * parg->y[i];
     }
-    *(parg->sum) = sum;
+
+*(parg->sum) = sum;
+    
     return NULL;
 }
 
