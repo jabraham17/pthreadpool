@@ -75,12 +75,12 @@ __attribute((__noinline__)) void benchmark(void* (*func)(void*), void* args,
     __VARIANCE(sample_size, times, var);
 
     if(print_flags & 1)
-        printf("Mean: %7.4fms Variance: %7.4fms\n", mean, var);
+        printf("Mean: %8.4fms Variance: %8.4fms\n", mean, var);
     if(print_flags & 2) {
         size_t row_length = 5;
         for(size_t i = 0; i < sample_size;) {
             for(size_t j = 0; j < row_length && (j + i) < sample_size; j++) {
-                printf("%7.4fms\t", times[j + i]);
+                printf("%8.4fms\t", times[j + i]);
             }
             i += row_length;
             printf("\n");
