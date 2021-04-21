@@ -2,9 +2,7 @@
 #ifndef _POOL_H_
 #define _POOL_H_
 
-#include "dprintf.h"
 #include "queue.h"
-#include "timespec_helper.h"
 #include <pthread.h>
 #include <stdlib.h>
 

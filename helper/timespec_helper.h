@@ -1,6 +1,8 @@
 
+#ifndef _TIMESPEC_HELPER_H_
+#define _TIMESPEC_HELPER_H_
 
-#include "timespec_helper.h"
+#include <time.h>
 
 // given an amount in s and ns, place the values in the timespec
 void th_calc_timespec(struct timespec* ts, unsigned long long s,
@@ -54,3 +56,5 @@ float th_gettime_ms() {
     clock_gettime(CLOCK_MONOTONIC, &t);
     return th_conv_timespec_ms(&t);
 }
+
+#endif

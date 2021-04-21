@@ -1,11 +1,10 @@
 
-#ifndef __PERF_H__
-#define __PERF_H__
+#ifndef _TIMING_H_
+#define _TIMING_H_
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
-#include <x86intrin.h>
 
 #define __LOOP(__N, __CODE)                                                    \
     for(size_t __i = 0; __i < __N; __i++) {                                    \
