@@ -61,7 +61,7 @@
 
 // print options: 00 no print, 01 print mean/variance, 10 print all times, 11
 // print both for 'return_times', only return if pointer is non null
-__attribute((__noinline__)) void benchmark(void* (*func)(void*), void* args,
+__attribute((__noinline__)) static void benchmark(void* (*func)(void*), void* args,
                                            size_t sample_size,
                                            size_t loop_count, int print_flags,
                                            float** return_times) {
